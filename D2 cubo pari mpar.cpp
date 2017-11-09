@@ -11,8 +11,8 @@ int main (){
 	
 		cout<< "seleccione que hacer \n"; 
 	
-		cout <<"1- numero para o impar \n"; 
-		cout <<"2- cubo de un numero \n"; 
+		cout <<"1- este numero es para o impar \n"; 
+		cout <<"2- da cubo de un numero \n"; 
 		cin>> caso;
 	
 	switch (caso){
