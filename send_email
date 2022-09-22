@@ -1,0 +1,83 @@
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
+from email.mime.text import MIMEText
+from email.mime.image import MIMEImage
+import csv
+import pandas as pd
+
+server = smtplib.SMTP('smtp.it.att.com:25')
+server.ehlo()
+server.starttls()
+
+filename = "/dbfs/mnt/sandbox/sandbox/sandbox342/lr2296/data_sources/development/data/anomaly_detection/goliath/anomaly_results/anomaly_flagging_email.csv"
+df_anomaly_flaggying_email=pd.read_csv(filename)
+
+
+sender = "kj561k@intl.att.com"
+#recipient = "kj561k@intl.att.com" #send single
+recipient=["lr2296@att.com","kj561k@intl.att.com","zl7157@att.com","aw8424@att.com"] #send multiple
+  
+msg = MIMEMultipart()
+msg['Subject'] = 'Goliath : Anomaly Detection : PILOT Phase : ' + str(df_anomaly_flaggying_email.Detected_date.max())
+msg['From'] = sender
+msg['To'] = ", ".join(recipient) #send multiple
+#msg['To'] = recipient # send single
+msg['Body']="file html "
+
+
+
+
+# Attach the file with filename to the email
+with open(filename,'rb') as file:
+  msg.attach(MIMEApplication(file.read(), Name='anomaly_flagging_email.csv'))
+  
+#with open(filename,'rb') as file:
+#  msg.attach(MIMEText(file.read(),_charset='us-ascii'))#read the fle and attach content but we have to enhace presentation
+
+
+#this will attach all graphics as a attach file
+list_all_graphics=dbutils.fs.ls('/mnt/sandbox/sandbox/sandbox342/lr2296/data_sources/development/data/anomaly_detection/goliath/anomaly_results/graphics')
+len_all_graphics=len(list_all_graphics)-1
+for i in range(len_all_graphics):
+  paht_readding=list_all_graphics[i+1].path.replace('dbfs:','/dbfs') #to math formats for readdingn path
+  the_name=list_all_graphics[i+1].path.replace('dbfs:/mnt/sandbox/sandbox/sandbox342/lr2296/data_sources/development/data/anomaly_detection/goliath/anomaly_results/graphics/','') #to math formats for name
+  
+  with open(paht_readding, 'rb') as f:
+    # set attachment mime and file name, the image type is png
+    msg.attach(MIMEImage(f.read(),Name=the_name))
+
+
+
+
+#attach multiple pictures inside the boty of html
+html_1 = """\
+<html>
+  <head></head>
+  <body>
+  <p>Hi Anthony and ZEEK.
+  <br>The below sequences have been detected to have Anomalous behaviour.<br>
+   </p>"""
+
+#attach multiple pictures inside the boty of html
+list_all_graphics=dbutils.fs.ls('/mnt/sandbox/sandbox/sandbox342/lr2296/data_sources/development/data/anomaly_detection/goliath/anomaly_results/graphics')
+len_all_graphics=len(list_all_graphics)-1
+for i in range(len_all_graphics):
+  paht_readding=list_all_graphics[i+1].path.replace('dbfs:','/dbfs') #to math formats for readdingn path
+  the_name=list_all_graphics[i+1].path.replace('dbfs:/mnt/sandbox/sandbox/sandbox342/lr2296/data_sources/development/data/anomaly_detection/goliath/anomaly_results/graphics/','').replace('.png','')
+  
+  with open(paht_readding, 'rb') as f:
+    # set attachment mime and file name, the image type is png
+    mime = MIMEImage(f.read())
+    mime.add_header('Content-ID', the_name)
+    html_1=html_1+ "<img src="+""""cid:"""+the_name+"""">""" 
+    #<img src="cid:customer_logo">
+    msg.attach(mime)
+
+html =html_1+ """ </body> </html> """
+msg.attach(MIMEText(html, 'html'))
+
+  
+server.sendmail(sender, recipient, msg.as_string()) #mutiple
+#server.sendmail(sender, [recipient], msg.as_string()) #single
+server.close()
